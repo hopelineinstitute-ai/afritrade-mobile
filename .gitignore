@@ -1,0 +1,22 @@
+node_modules/
+.DS_Store
+
+# Android build outputs
+android/app/build/
+android/.gradle/
+android/build/
+android/captures/
+android/local.properties
+*.apk
+*.aab
+
+# iOS build outputs
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+*.xcworkspace/xcuserdata/
+
+# IDE
+.idea/
+.vscode/
+*.swp
