@@ -26,6 +26,42 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    LocalNotifications: {
+      smallIcon: 'ic_launcher',
+      iconColor: '#FFB700',
+      sound: 'default',
+    },
+    Keyboard: {
+      resize: 'body',
+      resizeOnFullScreen: true,
+    },
+    Camera: {
+      // Prompt user for photo library permission on first use
+    },
+    Geolocation: {
+      // Uses default settings — prompts for permission on first use
+    },
+    Haptics: {
+      // Uses default settings
+    },
+    Network: {
+      // Uses default settings — monitors connectivity changes
+    },
+    Share: {
+      // Uses default native share sheet
+    },
+    Clipboard: {
+      // Uses default settings
+    },
+    Preferences: {
+      // Uses default settings for key-value local storage
+    },
+    Filesystem: {
+      // Uses default settings for file downloads (invoices, receipts)
+    },
+    ScreenOrientation: {
+      // Uses default settings
+    },
   },
   android: {
     allowMixedContent: false,
