@@ -16,12 +16,13 @@ const config: CapacitorConfig = {
       backgroundColor: '#FFB700',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
-      splashFullScreen: true,
-      splashImmersive: true,
+      splashFullScreen: false,
+      splashImmersive: false,
     },
     StatusBar: {
       backgroundColor: '#FFB700',
       style: 'LIGHT',
+      overlaysWebView: false,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
