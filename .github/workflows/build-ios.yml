@@ -1,0 +1,136 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Capacitor to iOS
+        run: npx cap sync ios
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Install CocoaPods dependencies
+        run: cd ios/App && pod install --repo-update || true
+
+      - name: Build iOS (unsigned, for simulator)
+        run: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | xcpretty || true
+
+      - name: Archive simulator app
+        run: |
+          cd ios/App/build/Build/Products/Debug-iphonesimulator
+          zip -r AfriTrade-simulator.zip App.app
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: afritrade-ios-simulator
+          path: ios/App/build/Build/Products/Debug-iphonesimulator/AfriTrade-simulator.zip
+          retention-days: 30
+
+  # ── Signed build (requires secrets) ──────────────────────────
+  # Uncomment this job when you have a paid Apple Developer account.
+  # You'll need to add these GitHub secrets:
+  #   - APPLE_CERTIFICATE_BASE64: p12 certificate (base64 encoded)
+  #   - APPLE_CERTIFICATE_PASSWORD: certificate password
+  #   - APPLE_PROVISIONING_PROFILE_BASE64: provisioning profile (base64)
+  #   - APPLE_TEAM_ID: your Apple Developer Team ID
+  #
+  # build-signed:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+  #
+  #     - name: Install dependencies
+  #       run: npm ci
+  #
+  #     - name: Sync Capacitor to iOS
+  #       run: npx cap sync ios
+  #
+  #     - name: Install Apple certificate and provisioning profile
+  #       env:
+  #         CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+  #         CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+  #         PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+  #       run: |
+  #         CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+  #         PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+  #         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+  #
+  #         echo -n "$CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+  #         echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+  #
+  #         security create-keychain -p "" $KEYCHAIN_PATH
+  #         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+  #         security unlock-keychain -p "" $KEYCHAIN_PATH
+  #         security import $CERTIFICATE_PATH -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+  #         security list-keychain -d user -s $KEYCHAIN_PATH
+  #
+  #         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+  #         cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+  #
+  #     - name: Install CocoaPods dependencies
+  #       run: cd ios/App && pod install --repo-update || true
+  #
+  #     - name: Build and archive
+  #       run: |
+  #         cd ios/App
+  #         xcodebuild \
+  #           -workspace App.xcworkspace \
+  #           -scheme App \
+  #           -configuration Release \
+  #           -archivePath build/AfriTrade.xcarchive \
+  #           archive \
+  #           DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }}
+  #
+  #     - name: Export IPA
+  #       run: |
+  #         cd ios/App
+  #         xcodebuild \
+  #           -exportArchive \
+  #           -archivePath build/AfriTrade.xcarchive \
+  #           -exportPath build/ipa \
+  #           -exportOptionsPlist ../../ExportOptions.plist
+  #
+  #     - name: Upload IPA
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: afritrade-ios-ipa
+  #         path: ios/App/build/ipa/*.ipa
+  #         retention-days: 30
